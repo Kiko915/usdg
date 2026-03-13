@@ -1,8 +1,10 @@
 import { useRef, useCallback } from "react";
-import { Animated, StyleSheet } from "react-native";
+import { Animated } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useTheme } from "../context/ThemeContext";
 
 export default function FadeScreen({ children, style }) {
+  const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
@@ -17,15 +19,10 @@ export default function FadeScreen({ children, style }) {
   );
 
   return (
-    <Animated.View style={[styles.root, style, { opacity }]}>
+    <Animated.View
+      style={[{ flex: 1, backgroundColor: colors.bg }, style, { opacity }]}
+    >
       {children}
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#0A0A0A",
-  },
-});

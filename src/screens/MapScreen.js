@@ -4,9 +4,11 @@ import * as Location from "expo-location";
 import { supabase } from "../lib/supabase";
 import LeafletMap from "../components/LeafletMap";
 import { useToast } from "../context/ToastContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function MapScreen() {
   const { showToast } = useToast();
+  const { theme } = useTheme();
   const [memories, setMemories] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedCoord, setSelectedCoord] = useState(null);
@@ -87,7 +89,6 @@ export default function MapScreen() {
 
   const handleLongPress = (coordinate) => {
     setSelectedCoord(coordinate);
-    console.log("Long press at:", coordinate);
   };
 
   return (
@@ -95,6 +96,7 @@ export default function MapScreen() {
       <LeafletMap
         markers={memories}
         userLocation={userLocation}
+        mapTheme={theme}
         onLongPress={handleLongPress}
       />
     </View>
@@ -102,5 +104,5 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0A" },
+  container: { flex: 1 },
 });

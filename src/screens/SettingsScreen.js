@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Image,
+  Switch,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,7 +17,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../hooks/useProfile";
 import { useToast } from "../context/ToastContext";
+import { useTheme } from "../context/ThemeContext";
 import FadeScreen from "../components/FadeScreen";
+import ScreenHeader from "../components/ScreenHeader";
 
 const APP_VERSION = "1.0.0";
 
@@ -29,24 +32,38 @@ function getInitials(email) {
   return email ? email.charAt(0).toUpperCase() : "?";
 }
 
-function SectionLabel({ label }) {
-  return <Text style={styles.sectionLabel}>{label}</Text>;
+function SectionLabel({ label, colors }) {
+  return (
+    <Text style={[styles.sectionLabel, { color: colors.sectionLabel }]}>{label}</Text>
+  );
 }
 
-function Row({ icon, iconBg, iconColor = "#FFFFFF", label, value, onPress, destructive, last }) {
+function Row({ icon, iconBg, iconColor = "#FFFFFF", label, value, onPress, destructive, last, right, colors }) {
   const inner = (
-    <View style={[styles.row, !last && styles.rowBorder]}>
+    <View style={[
+      styles.row,
+      { backgroundColor: colors.surface },
+      !last && { borderBottomWidth: 1, borderBottomColor: colors.border },
+    ]}>
       <View style={styles.rowLeft}>
-        <View style={[styles.iconWrap, { backgroundColor: iconBg ?? "#1E1E1E" }]}>
+        <View style={[styles.iconWrap, { backgroundColor: iconBg ?? colors.iconBgDefault }]}>
           <Ionicons name={icon} size={16} color={iconColor} />
         </View>
-        <Text style={[styles.rowLabel, destructive && styles.rowLabelDestructive]}>
+        <Text style={[
+          styles.rowLabel,
+          { color: destructive ? "#FF3B5C" : colors.text },
+          destructive && styles.rowLabelDestructive,
+        ]}>
           {label}
         </Text>
       </View>
       <View style={styles.rowRight}>
-        {value ? <Text style={styles.rowValue}>{value}</Text> : null}
-        {onPress ? <Ionicons name="chevron-forward" size={14} color="#333333" /> : null}
+        {right ?? (
+          <>
+            {value ? <Text style={[styles.rowValue, { color: colors.rowValue }]}>{value}</Text> : null}
+            {onPress ? <Ionicons name="chevron-forward" size={14} color={colors.chevron} /> : null}
+          </>
+        )}
       </View>
     </View>
   );
@@ -58,6 +75,7 @@ function Row({ icon, iconBg, iconColor = "#FFFFFF", label, value, onPress, destr
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { colors, theme, toggleTheme } = useTheme();
   const { profile, loading, saving, updateProfile, pickAndUploadAvatar, getAvatarUrl, refetch } = useProfile();
   const [user, setUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,7 +93,6 @@ export default function SettingsScreen() {
     setRefreshing(false);
   };
 
-  // Sync username field when profile loads
   useEffect(() => {
     if (profile?.username) setUsername(profile.username);
   }, [profile?.username]);
@@ -117,10 +134,41 @@ export default function SettingsScreen() {
   const avatarUrl = getAvatarUrl();
   const displayName = profile?.username || email;
 
+  const headerRight = !editing ? (
+    <TouchableOpacity
+      style={[styles.editBtn, { borderColor: colors.borderStrong }]}
+      onPress={() => setEditing(true)}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.editBtnText, { color: colors.textSub }]}>Edit profile</Text>
+    </TouchableOpacity>
+  ) : (
+    <View style={styles.editActions}>
+      <TouchableOpacity
+        onPress={() => { setEditing(false); setUsername(profile?.username ?? ""); }}
+        style={styles.cancelBtn}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.cancelBtnText, { color: colors.textMuted }]}>Cancel</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={handleSave}
+        style={styles.saveBtn}
+        disabled={saving}
+        activeOpacity={0.8}
+      >
+        {saving
+          ? <ActivityIndicator size="small" color="#fff" />
+          : <Text style={styles.saveBtnText}>Save</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <FadeScreen>
+      <ScreenHeader title="Settings" right={headerRight} />
       <ScrollView
-        style={styles.root}
+        style={[styles.root, { backgroundColor: colors.bg }]}
         contentContainerStyle={[
           styles.content,
           { paddingTop: 16, paddingBottom: insets.bottom + 100 },
@@ -132,47 +180,12 @@ export default function SettingsScreen() {
             onRefresh={handleRefresh}
             tintColor="#FF5D8F"
             colors={["#FF5D8F"]}
-            progressBackgroundColor="#111111"
+            progressBackgroundColor={colors.surface}
           />
         }
       >
-        {/* ── Header ── */}
-        <View style={styles.headerRow}>
-          <Text style={styles.heading}>Settings</Text>
-          {!editing ? (
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => setEditing(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.editBtnText}>Edit profile</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.editActions}>
-              <TouchableOpacity
-                onPress={() => { setEditing(false); setUsername(profile?.username ?? ""); }}
-                style={styles.cancelBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSave}
-                style={styles.saveBtn}
-                disabled={saving}
-                activeOpacity={0.8}
-              >
-                {saving
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.saveBtnText}>Save</Text>}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
         {/* ── Profile card ── */}
-        <View style={styles.profileCard}>
-          {/* Avatar */}
+        <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
             onPress={editing ? handleAvatarPress : undefined}
             activeOpacity={editing ? 0.75 : 1}
@@ -198,37 +211,61 @@ export default function SettingsScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Name + meta */}
           <View style={styles.profileInfo}>
             {editing ? (
               <TextInput
-                style={styles.usernameInput}
+                style={[styles.usernameInput, { color: colors.text, borderBottomColor: colors.accent }]}
                 value={username}
                 onChangeText={setUsername}
                 placeholder="Enter username"
-                placeholderTextColor="#3D3D3D"
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
                 maxLength={30}
               />
             ) : (
-              <Text style={styles.displayName} numberOfLines={1}>
+              <Text style={[styles.displayName, { color: colors.text }]} numberOfLines={1}>
                 {displayName}
               </Text>
             )}
-            <Text style={styles.profileSub}>Member since {memberSince}</Text>
+            <Text style={[styles.profileSub, { color: colors.profileSub }]}>
+              Member since {memberSince}
+            </Text>
           </View>
         </View>
 
+        {/* ── Appearance ── */}
+        <SectionLabel label="Appearance" colors={colors} />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Row
+            icon={theme === "dark" ? "moon" : "sunny"}
+            iconBg={theme === "dark" ? "#12121F" : "#FFF8E6"}
+            iconColor={theme === "dark" ? "#9B8FFF" : "#F59E0B"}
+            label="Dark mode"
+            colors={colors}
+            last
+            right={
+              <Switch
+                value={theme === "dark"}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.borderStrong, true: "#FF5D8F" }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.borderStrong}
+              />
+            }
+          />
+        </View>
+
         {/* ── Account ── */}
-        <SectionLabel label="Account" />
-        <View style={styles.section}>
+        <SectionLabel label="Account" colors={colors} />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Row
             icon="at-outline"
             iconBg="#141424"
             iconColor="#6C8EFF"
             label="Username"
             value={profile?.username ?? "Not set"}
+            colors={colors}
           />
           <Row
             icon="mail-outline"
@@ -236,6 +273,7 @@ export default function SettingsScreen() {
             iconColor="#6C8EFF"
             label="Email"
             value={email}
+            colors={colors}
           />
           <Row
             icon="finger-print-outline"
@@ -243,6 +281,7 @@ export default function SettingsScreen() {
             iconColor="#888888"
             label="User ID"
             value={userId}
+            colors={colors}
           />
           <Row
             icon="shield-checkmark-outline"
@@ -250,32 +289,35 @@ export default function SettingsScreen() {
             iconColor="#22C55E"
             label="Sign-in method"
             value={provider.charAt(0).toUpperCase() + provider.slice(1)}
+            colors={colors}
             last
           />
         </View>
 
         {/* ── About ── */}
-        <SectionLabel label="About" />
-        <View style={styles.section}>
+        <SectionLabel label="About" colors={colors} />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Row
             icon="heart-outline"
             iconBg="#1A0D12"
             iconColor="#FF5D8F"
             label="Us, Digitized"
             value={`v${APP_VERSION}`}
+            colors={colors}
           />
           <Row
             icon="map-outline"
             iconBg="#1A1200"
             iconColor="#F59E0B"
             label="Your memories, mapped."
+            colors={colors}
             last
           />
         </View>
 
         {/* ── Session ── */}
-        <SectionLabel label="Session" />
-        <View style={styles.section}>
+        <SectionLabel label="Session" colors={colors} />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Row
             icon="log-out-outline"
             iconBg="#1A0C10"
@@ -283,6 +325,7 @@ export default function SettingsScreen() {
             label="Sign out"
             destructive
             onPress={handleSignOut}
+            colors={colors}
             last
           />
         </View>
@@ -292,32 +335,19 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0A0A0A" },
+  root: { flex: 1 },
   content: { paddingHorizontal: 20 },
 
-  // ── Header ──
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-  heading: {
-    fontSize: 26,
-    fontFamily: "Catamaran_700Bold",
-    color: "#FFFFFF",
-  },
+  // ── Header actions ──
   editBtn: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#2A2A2A",
   },
   editBtnText: {
     fontSize: 13,
     fontFamily: "Catamaran_600SemiBold",
-    color: "#888888",
   },
   editActions: {
     flexDirection: "row",
@@ -332,7 +362,6 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 13,
     fontFamily: "Catamaran_400Regular",
-    color: "#555555",
   },
   saveBtn: {
     paddingHorizontal: 16,
@@ -352,10 +381,8 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1E1E1E",
     padding: 16,
     marginBottom: 28,
     gap: 14,
@@ -389,37 +416,30 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 16,
     fontFamily: "Catamaran_600SemiBold",
-    color: "#FFFFFF",
   },
   usernameInput: {
     fontSize: 16,
     fontFamily: "Catamaran_400Regular",
-    color: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#FF5D8F",
     paddingVertical: 2,
   },
   profileSub: {
     fontSize: 12,
     fontFamily: "Catamaran_400Regular",
-    color: "#555555",
   },
 
   // ── Section ──
   sectionLabel: {
     fontSize: 11,
     fontFamily: "Catamaran_600SemiBold",
-    color: "#444444",
     letterSpacing: 0.8,
     textTransform: "uppercase",
     marginBottom: 8,
     marginLeft: 4,
   },
   section: {
-    backgroundColor: "#111111",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#1E1E1E",
     overflow: "hidden",
     marginBottom: 24,
   },
@@ -431,10 +451,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 13,
-  },
-  rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#1A1A1A",
   },
   rowLeft: {
     flexDirection: "row",
@@ -459,17 +475,14 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 14,
     fontFamily: "Catamaran_400Regular",
-    color: "#CCCCCC",
     flexShrink: 1,
   },
   rowLabelDestructive: {
-    color: "#FF3B5C",
     fontFamily: "Catamaran_600SemiBold",
   },
   rowValue: {
     fontSize: 13,
     fontFamily: "Catamaran_400Regular",
-    color: "#444444",
     maxWidth: 160,
     textAlign: "right",
   },

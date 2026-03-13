@@ -1,33 +1,39 @@
-import { Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import FadeScreen from "../components/FadeScreen";
+import ScreenHeader from "../components/ScreenHeader";
+import { useTheme } from "../context/ThemeContext";
 
 export default function MessagingScreen() {
+  const { colors } = useTheme();
+
   return (
-    <FadeScreen style={styles.container}>
-      <Ionicons name="chatbubble-outline" size={40} color="#2A2A2A" />
-      <Text style={styles.title}>Messages</Text>
-      <Text style={styles.subtitle}>Your conversations will appear here.</Text>
+    <FadeScreen>
+      <ScreenHeader title="Messages" />
+      <View style={styles.body}>
+        <Ionicons name="chatbubble-outline" size={40} color={colors.border} />
+        <Text style={[styles.title, { color: colors.text }]}>No messages yet</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          Your conversations will appear here.
+        </Text>
+      </View>
     </FadeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  body: {
     flex: 1,
-    backgroundColor: "#0A0A0A",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: "Catamaran_700Bold",
-    color: "#FFFFFF",
   },
   subtitle: {
     fontSize: 14,
     fontFamily: "Catamaran_400Regular",
-    color: "#444444",
   },
 });

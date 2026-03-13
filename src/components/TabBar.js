@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import { View, TouchableOpacity, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../context/ThemeContext";
 
 const TABS = [
   { key: "Map",       icon: "map-outline",        activeIcon: "map"        },
@@ -11,11 +12,10 @@ const TABS = [
   { key: "Settings",  icon: "settings-outline",   activeIcon: "settings"   },
 ];
 
-function TabItem({ tab, isFocused, onPress }) {
+function TabItem({ tab, isFocused, onPress, colors }) {
   const scale = useRef(new Animated.Value(1)).current;
   const dotOpacity = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
 
-  // Scale bounce on press
   const handlePress = () => {
     Animated.sequence([
       Animated.timing(scale, {
@@ -34,7 +34,6 @@ function TabItem({ tab, isFocused, onPress }) {
     onPress();
   };
 
-  // Dot fade in/out when focus changes
   useEffect(() => {
     Animated.timing(dotOpacity, {
       toValue: isFocused ? 1 : 0,
@@ -46,18 +45,16 @@ function TabItem({ tab, isFocused, onPress }) {
   const iconName = isFocused ? tab.activeIcon : tab.icon;
 
   return (
-    <TouchableOpacity
-      style={styles.tab}
-      onPress={handlePress}
-      activeOpacity={1}
-    >
+    <TouchableOpacity style={styles.tab} onPress={handlePress} activeOpacity={1}>
       <Animated.View style={{ transform: [{ scale }], alignItems: "center", gap: 4 }}>
         <Ionicons
           name={iconName}
           size={22}
-          color={isFocused ? "#FF5D8F" : "#444444"}
+          color={isFocused ? colors.accent : colors.tabInactive}
         />
-        <Animated.View style={[styles.activeDot, { opacity: dotOpacity }]} />
+        <Animated.View
+          style={[styles.activeDot, { opacity: dotOpacity, backgroundColor: colors.accent }]}
+        />
       </Animated.View>
     </TouchableOpacity>
   );
@@ -97,10 +94,19 @@ function CenterButton({ onPress }) {
 
 export default function TabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 12 }]}>
-      <View style={styles.bar}>
+      <View
+        style={[
+          styles.bar,
+          {
+            backgroundColor: colors.tabBar,
+            borderColor: colors.tabBarBorder,
+          },
+        ]}
+      >
         {TABS.map((tab, index) => {
           if (tab.center) {
             return (
@@ -120,6 +126,7 @@ export default function TabBar({ state, navigation }) {
               tab={tab}
               isFocused={isFocused}
               onPress={() => navigation.navigate(tab.key)}
+              colors={colors}
             />
           );
         })}
@@ -141,16 +148,14 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111111",
     borderRadius: 40,
     paddingHorizontal: 8,
     paddingVertical: 10,
     width: "88%",
     borderWidth: 1,
-    borderColor: "#1E1E1E",
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.15,
     shadowRadius: 24,
     elevation: 16,
   },
@@ -164,7 +169,6 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#FF5D8F",
   },
   centerWrap: {
     flex: 1,
@@ -185,6 +189,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
     borderWidth: 3,
-    borderColor: "#111111",
+    borderColor: "#FF5D8F",
   },
 });

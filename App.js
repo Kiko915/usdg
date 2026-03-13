@@ -11,6 +11,7 @@ import { supabase } from "./src/lib/supabase";
 import AuthScreen from "./src/screens/AuthScreen";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { ToastProvider } from "./src/context/ToastContext";
+import { ThemeProvider } from "./src/context/ThemeContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -36,9 +37,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ToastProvider>
-        {session ? <AppNavigator /> : <AuthScreen />}
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          {session ? <AppNavigator /> : <AuthScreen />}
+        </ToastProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

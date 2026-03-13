@@ -1,6 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../context/ThemeContext";
 import MapScreen from "../screens/MapScreen";
 import MemoriesScreen from "../screens/MemoriesScreen";
 import MessagingScreen from "../screens/MessagingScreen";
@@ -11,6 +12,7 @@ const Tab = createBottomTabNavigator();
 
 export default function AppNavigator() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
     <NavigationContainer>
@@ -20,7 +22,7 @@ export default function AppNavigator() {
           headerShown: false,
           lazy: false,
           sceneStyle: {
-            backgroundColor: "#0A0A0A",
+            backgroundColor: colors.bg,
             paddingTop: insets.top,
           },
         }}

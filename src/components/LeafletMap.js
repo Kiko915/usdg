@@ -74,12 +74,7 @@ const MAP_HTML = `
     // Start with a world view — will fly to user location once received
     var map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }).addTo(map);
-
+    // Tiles injected via setMapTheme() after React Native sends the current theme
     var memoryMarkers = {};
     var userMarker = null;
     var accuracyCircle = null;
@@ -162,6 +157,33 @@ const MAP_HTML = `
       map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
     }
 
+    // ── Theme switching ──
+    var tileLayer = null;
+    var TILES = {
+      dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    };
+
+    function setMapTheme(t) {
+      if (tileLayer) map.removeLayer(tileLayer);
+      tileLayer = L.tileLayer(TILES[t] || TILES.dark, {
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(map);
+
+      // Update popup styles dynamically
+      var isDark = t === 'dark';
+      var style = document.getElementById('theme-style') || document.createElement('style');
+      style.id = 'theme-style';
+      style.textContent = isDark
+        ? '.leaflet-popup-content-wrapper{background:#111!important;color:#eee!important;border:1px solid #2a2a2a;border-radius:10px!important;box-shadow:0 4px 16px rgba(0,0,0,.6)!important}.leaflet-popup-tip{background:#111!important}.leaflet-popup-content b{color:#fff}.leaflet-popup-content span{color:#888}.leaflet-control-zoom a{background:#1a1a1a!important;color:#aaa!important;border-color:#2a2a2a!important}.leaflet-control-attribution{background:rgba(0,0,0,.6)!important;color:#555!important}'
+        : '.leaflet-popup-content-wrapper{background:#fff!important;color:#1c1c1e!important;border:1px solid #e5e5ea;border-radius:10px!important;box-shadow:0 4px 16px rgba(0,0,0,.12)!important}.leaflet-popup-tip{background:#fff!important}.leaflet-popup-content b{color:#1c1c1e}.leaflet-popup-content span{color:#6c6c70}.leaflet-control-zoom a{background:#fff!important;color:#1c1c1e!important;border-color:#e5e5ea!important}.leaflet-control-attribution{background:rgba(255,255,255,.8)!important;color:#aeaeb2!important}';
+      document.head.appendChild(style);
+
+      document.body.style.background = isDark ? '#0a0a0a' : '#f2f2f7';
+    }
+
     // ── Message handler ──
     function handleMessage(event) {
       try {
@@ -178,11 +200,17 @@ const MAP_HTML = `
 </html>
 `;
 
-export default function LeafletMap({ markers = [], userLocation = null, onLongPress }) {
+export default function LeafletMap({ markers = [], userLocation = null, mapTheme = "dark", onLongPress }) {
   const webViewRef = useRef(null);
   const pendingMarkers = useRef(markers);
   const pendingUserLocation = useRef(userLocation);
+  const pendingTheme = useRef(mapTheme);
   const isLoaded = useRef(false);
+
+  const pushTheme = (t) => {
+    if (!webViewRef.current || !isLoaded.current) return;
+    webViewRef.current.injectJavaScript(`setMapTheme(${JSON.stringify(t)}); true;`);
+  };
 
   const pushMarkers = (list) => {
     if (!webViewRef.current || !isLoaded.current) return;
@@ -206,8 +234,14 @@ export default function LeafletMap({ markers = [], userLocation = null, onLongPr
     pushUserLocation(userLocation);
   }, [userLocation]);
 
+  useEffect(() => {
+    pendingTheme.current = mapTheme;
+    pushTheme(mapTheme);
+  }, [mapTheme]);
+
   const handleLoad = () => {
     isLoaded.current = true;
+    pushTheme(pendingTheme.current);
     pushMarkers(pendingMarkers.current);
     pushUserLocation(pendingUserLocation.current);
   };
