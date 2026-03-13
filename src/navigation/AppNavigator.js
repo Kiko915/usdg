@@ -1,6 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useTheme } from "../context/ThemeContext";
 import MapScreen from "../screens/MapScreen";
 import MemoriesScreen from "../screens/MemoriesScreen";
@@ -15,6 +16,8 @@ export default function AppNavigator() {
   const { colors } = useTheme();
 
   return (
+    <>
+    <StatusBar style={theme === "dark" ? "light" : "dark"} />
     <NavigationContainer>
       <Tab.Navigator
         tabBar={(props) => <TabBar {...props} />}
@@ -33,5 +36,6 @@ export default function AppNavigator() {
         <Tab.Screen name="Settings"  component={SettingsScreen}  />
       </Tab.Navigator>
     </NavigationContainer>
+    </>
   );
 }
