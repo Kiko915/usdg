@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Alert,
   TextInput,
   Image,
   Switch,
@@ -18,6 +17,7 @@ import { supabase } from "../lib/supabase";
 import { useProfile } from "../hooks/useProfile";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
+import { useModal } from "../context/ModalContext";
 import FadeScreen from "../components/FadeScreen";
 import ScreenHeader from "../components/ScreenHeader";
 
@@ -75,6 +75,7 @@ function Row({ icon, iconBg, iconColor = "#FFFFFF", label, value, onPress, destr
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const { showModal } = useModal();
   const { colors, theme, toggleTheme } = useTheme();
   const { profile, loading, saving, updateProfile, pickAndUploadAvatar, getAvatarUrl, refetch } = useProfile();
   const [user, setUser] = useState(null);
@@ -121,10 +122,14 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert("Sign out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => supabase.auth.signOut() },
-    ]);
+    showModal({
+      title: "Sign out",
+      message: "Are you sure you want to sign out?",
+      buttons: [
+        { text: "Cancel", style: "cancel" },
+        { text: "Sign out", style: "destructive", onPress: () => supabase.auth.signOut() },
+      ],
+    });
   };
 
   const email = user?.email ?? "—";

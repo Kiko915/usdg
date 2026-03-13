@@ -12,6 +12,7 @@ import AuthScreen from "./src/screens/AuthScreen";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { ToastProvider } from "./src/context/ToastContext";
 import { ThemeProvider } from "./src/context/ThemeContext";
+import { ModalProvider } from "./src/context/ModalContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -38,9 +39,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <ToastProvider>
-          {session ? <AppNavigator /> : <AuthScreen />}
-        </ToastProvider>
+        <ModalProvider>
+          <ToastProvider>
+            {session ? <AppNavigator /> : <AuthScreen />}
+          </ToastProvider>
+        </ModalProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
