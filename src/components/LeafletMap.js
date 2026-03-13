@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 
@@ -157,6 +157,14 @@ const MAP_HTML = `
       map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
     }
 
+    // ── Recenter ──
+    function recenterToUser() {
+      if (userMarker) {
+        var latlng = userMarker.getLatLng();
+        map.flyTo(latlng, 16, { animate: true, duration: 1.2 });
+      }
+    }
+
     // ── Theme switching ──
     var tileLayer = null;
     var TILES = {
@@ -200,8 +208,15 @@ const MAP_HTML = `
 </html>
 `;
 
-export default function LeafletMap({ markers = [], userLocation = null, mapTheme = "dark", onLongPress }) {
+const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation = null, mapTheme = "dark", onLongPress }, ref) {
   const webViewRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    recenter: () => {
+      if (!webViewRef.current || !isLoaded.current) return;
+      webViewRef.current.injectJavaScript(`recenterToUser(); true;`);
+    },
+  }));
   const pendingMarkers = useRef(markers);
   const pendingUserLocation = useRef(userLocation);
   const pendingTheme = useRef(mapTheme);
@@ -268,7 +283,9 @@ export default function LeafletMap({ markers = [], userLocation = null, mapTheme
       scrollEnabled={false}
     />
   );
-}
+});
+
+export default LeafletMap;
 
 const styles = StyleSheet.create({
   map: { flex: 1, backgroundColor: "#0A0A0A" },
