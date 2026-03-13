@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
+import * as Location from "expo-location";
 import { supabase } from "../lib/supabase";
 import LeafletMap from "../components/LeafletMap";
+import { useToast } from "../context/ToastContext";
 
 export default function MapScreen() {
+  const { showToast } = useToast();
   const [memories, setMemories] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
   const [selectedCoord, setSelectedCoord] = useState(null);
 
   useEffect(() => {
+    requestLocation();
     fetchAllMemories();
 
     const memoriesChannel = supabase
@@ -41,6 +46,26 @@ export default function MapScreen() {
     };
   }, []);
 
+  const requestLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      showToast({
+        type: "warning",
+        title: "Location access denied",
+        message: "Enable location permission to center the map on you.",
+      });
+      return;
+    }
+    const loc = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
+    setUserLocation({
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+      accuracy: loc.coords.accuracy,
+    });
+  };
+
   const fetchAllMemories = async () => {
     const { data, error } = await supabase
       .from("memories")
@@ -67,7 +92,11 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <LeafletMap markers={memories} onLongPress={handleLongPress} />
+      <LeafletMap
+        markers={memories}
+        userLocation={userLocation}
+        onLongPress={handleLongPress}
+      />
     </View>
   );
 }

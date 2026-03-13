@@ -31,6 +31,12 @@
       [
         "expo-image-picker",
         { "photosPermission": "Allow Us, Digitized to access your photos to set a profile picture." }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Us, Digitized to use your location to show where your memories are on the map."
+        }
       ]
     ]
   }
