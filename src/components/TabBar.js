@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import { View, TouchableOpacity, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
 
@@ -98,6 +99,11 @@ export default function TabBar({ state, navigation }) {
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom + 12 }]}>
+      <LinearGradient
+        colors={["transparent", colors.bg]}
+        style={styles.gradient}
+        pointerEvents="none"
+      />
       <View
         style={[
           styles.bar,
@@ -144,6 +150,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "transparent",
     pointerEvents: "box-none",
+  },
+  gradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 140,
+    pointerEvents: "none",
   },
   bar: {
     flexDirection: "row",
