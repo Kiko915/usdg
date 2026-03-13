@@ -13,7 +13,7 @@ const Tab = createBottomTabNavigator();
 
 export default function AppNavigator() {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
 
   return (
     <>
