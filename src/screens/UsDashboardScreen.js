@@ -7,8 +7,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import differenceInDays from "date-fns/differenceInDays";
-import parseISO from "date-fns/parseISO";
 import { supabase } from "../lib/supabase";
 import { useTheme } from "../context/ThemeContext";
 import { usePartner } from "../hooks/usePartner";
@@ -148,7 +146,7 @@ export default function UsDashboardScreen() {
   };
 
   const daysCount = profile?.anniversary_date
-    ? differenceInDays(new Date(), parseISO(profile.anniversary_date))
+    ? Math.floor((Date.now() - new Date(profile.anniversary_date).getTime()) / 86400000)
     : null;
 
   const myAvatarUrl      = getAvatarUrl(profile?.avatar_url);
