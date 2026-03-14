@@ -239,11 +239,17 @@ export default function UsDashboardScreen() {
                 style={StyleSheet.absoluteFill}
               />
               <View style={styles.requestCardInner}>
-                <View style={[styles.requestInitialBubble, { backgroundColor: "#FF5D8F" }]}>
-                  <Text style={styles.requestInitialText}>
-                    {incomingRequest.senderUsername?.[0]?.toUpperCase() ?? "?"}
-                  </Text>
-                </View>
+                {incomingRequest.senderAvatarUrl ? (
+                  <View style={[styles.requestInitialBubble, { overflow: "hidden" }]}>
+                    <Image source={{ uri: incomingRequest.senderAvatarUrl }} style={StyleSheet.absoluteFill} />
+                  </View>
+                ) : (
+                  <View style={[styles.requestInitialBubble, { backgroundColor: "#FF5D8F" }]}>
+                    <Text style={styles.requestInitialText}>
+                      {incomingRequest.senderUsername?.[0]?.toUpperCase() ?? "?"}
+                    </Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.requestTitle, { color: colors.text }]}>
                     <Text style={{ fontFamily: "Catamaran_700Bold" }}>@{incomingRequest.senderUsername}</Text>
