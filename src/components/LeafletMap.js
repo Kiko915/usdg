@@ -49,14 +49,14 @@ const MAP_HTML = `
       width: 22px;
       height: 22px;
       border-radius: 50%;
-      background: rgba(66, 133, 244, 0.25);
+      background: rgba(255, 93, 143, 0.25);
       animation: ring-pulse 2s ease-out infinite;
     }
     .user-dot-core {
       position: relative;
       width: 14px;
       height: 14px;
-      background: #4285F4;
+      background: #FF5D8F;
       border-radius: 50%;
       border: 2.5px solid #fff;
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
@@ -136,12 +136,12 @@ const MAP_HTML = `
       if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
       if (accuracyCircle) { map.removeLayer(accuracyCircle); accuracyCircle = null; }
 
-      // Accuracy radius circle (blue semi-transparent)
+      // Accuracy radius circle (accent semi-transparent)
       if (accuracy && accuracy > 0) {
         accuracyCircle = L.circle([lat, lng], {
           radius: accuracy,
-          color: '#4285F4',
-          fillColor: '#4285F4',
+          color: '#FF5D8F',
+          fillColor: '#FF5D8F',
           fillOpacity: 0.08,
           weight: 1,
           opacity: 0.4,
