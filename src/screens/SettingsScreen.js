@@ -15,6 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../hooks/useProfile";
+import { usePartner } from "../hooks/usePartner";
+import { usePartnerRequest } from "../hooks/usePartnerRequest";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
 import { useModal } from "../context/ModalContext";
@@ -78,6 +80,8 @@ export default function SettingsScreen() {
   const { showModal } = useModal();
   const { colors, theme, toggleTheme } = useTheme();
   const { profile, loading, saving, updateProfile, pickAndUploadAvatar, getAvatarUrl, refetch } = useProfile();
+  const { userId, partner } = usePartner();
+  const { unlinkPartner, requestBusy } = usePartnerRequest(userId);
   const [user, setUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -132,10 +136,29 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleUnlink = () => {
+    showModal({
+      title: "Unlink partner",
+      message: `Unlink @${partner?.username}? Both of you will be disconnected.`,
+      buttons: [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unlink", style: "destructive",
+          onPress: async () => {
+            const result = await unlinkPartner();
+            if (!result?.error) {
+              showToast({ type: "success", title: "Unlinked", message: "You are no longer linked." });
+            }
+          },
+        },
+      ],
+    });
+  };
+
   const email = user?.email ?? "—";
   const memberSince = formatDate(user?.created_at);
   const provider = user?.app_metadata?.provider ?? "email";
-  const userId = user?.id ? `${user.id.slice(0, 8)}…` : "—";
+  const userIdDisplay = user?.id ? `${user.id.slice(0, 8)}…` : "—";
   const avatarUrl = getAvatarUrl();
   const displayName = profile?.username || email;
 
@@ -285,7 +308,7 @@ export default function SettingsScreen() {
             iconBg="#1A1A1A"
             iconColor="#888888"
             label="User ID"
-            value={userId}
+            value={userIdDisplay}
             colors={colors}
           />
           <Row
@@ -297,6 +320,34 @@ export default function SettingsScreen() {
             colors={colors}
             last
           />
+        </View>
+
+        {/* ── Partner ── */}
+        <SectionLabel label="Partner" colors={colors} />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {partner ? (
+            <Row
+              icon="heart-dislike-outline"
+              iconBg="#1A0D12"
+              iconColor="#FF3B5C"
+              label="Unlink partner"
+              value={`@${partner.username}`}
+              destructive
+              onPress={requestBusy ? undefined : handleUnlink}
+              colors={colors}
+              last
+            />
+          ) : (
+            <Row
+              icon="people-outline"
+              iconBg="#141424"
+              iconColor="#6C8EFF"
+              label="No partner linked"
+              value="Link from the Us tab"
+              colors={colors}
+              last
+            />
+          )}
         </View>
 
         {/* ── About ── */}
