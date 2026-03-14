@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, TextInput, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Animated,
+  StyleSheet, ActivityIndicator, Animated, Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,7 +25,15 @@ const ERROR_COPY = {
 };
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
-function Avatar({ username }) {
+function Avatar({ username, url }) {
+  if (url) {
+    return (
+      <View style={[styles.avatar, { overflow: "hidden" }]}>
+        <Image source={{ uri: url }} style={StyleSheet.absoluteFill} />
+      </View>
+    );
+  }
+
   const letter = username?.[0]?.toUpperCase() ?? "?";
   return (
     <LinearGradient
@@ -45,7 +53,7 @@ function UserRow({ item, onSend, busy, sent, colors }) {
 
   return (
     <View style={[styles.row, { borderBottomColor: colors.border }]}>
-      <Avatar username={item.username} />
+      <Avatar username={item.username} url={item.avatar_url} />
 
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={[styles.rowUsername, { color: colors.text }]}>
@@ -164,7 +172,7 @@ export default function LinkPartnerScreen({ navigation }) {
 
     const { data, error: err } = await supabase
       .from("profiles")
-      .select("id, username, partner_id")
+      .select("id, username, partner_id, avatar_url")
       .ilike("username", `%${trimmed}%`)
       .neq("id", userId ?? "00000000-0000-0000-0000-000000000000")
       .order("username")
