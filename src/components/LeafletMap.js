@@ -62,6 +62,32 @@ const MAP_HTML = `
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
       z-index: 1;
     }
+    /* Partner location dot (Blue) */
+    .partner-dot-outer {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .partner-dot-ring {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(66, 133, 244, 0.25);
+      animation: ring-pulse 2s ease-out infinite;
+    }
+    .partner-dot-core {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      background: #4285F4;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      z-index: 1;
+    }
     @keyframes ring-pulse {
       0%   { transform: scale(0.8); opacity: 0.8; }
       100% { transform: scale(2.2); opacity: 0; }
@@ -77,6 +103,7 @@ const MAP_HTML = `
     // Tiles injected via setMapTheme() after React Native sends the current theme
     var memoryMarkers = {};
     var userMarker = null;
+    var partnerMarker = null;
     var accuracyCircle = null;
     var pressTimer = null;
     var didPan = false;
@@ -90,9 +117,18 @@ const MAP_HTML = `
       popupAnchor: [0, -10]
     });
 
-    // User location dot — blue pulsing
+    // User location dot — pink pulsing
     var userIcon = L.divIcon({
       html: '<div class="user-dot-outer"><div class="user-dot-ring"></div><div class="user-dot-core"></div></div>',
+      className: '',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      popupAnchor: [0, -14]
+    });
+
+    // Partner location dot — blue pulsing
+    var partnerIcon = L.divIcon({
+      html: '<div class="partner-dot-outer"><div class="partner-dot-ring"></div><div class="partner-dot-core"></div></div>',
       className: '',
       iconSize: [22, 22],
       iconAnchor: [11, 11],
@@ -148,13 +184,27 @@ const MAP_HTML = `
         }).addTo(map);
       }
 
-      // Pulsing blue dot
+      // Pulsing pink dot
       userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 })
         .bindPopup('<b>You are here</b>')
         .addTo(map);
 
-      // Fly to location smoothly
-      map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
+      // Only fly to location smoothly if we haven't panned yet
+      if (!didPan) {
+        map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
+      }
+    }
+
+    // ── Set partner location ──
+    function setPartnerLocation(lat, lng) {
+      if (partnerMarker) {
+        // Move smoothly
+        partnerMarker.setLatLng([lat, lng]);
+      } else {
+        partnerMarker = L.marker([lat, lng], { icon: partnerIcon, zIndexOffset: 999 })
+          .bindPopup('<b>Partner</b>')
+          .addTo(map);
+      }
     }
 
     // ── Recenter ──
@@ -198,6 +248,7 @@ const MAP_HTML = `
         var msg = JSON.parse(event.data);
         if (msg.type === 'setMarkers') setMarkers(msg.markers);
         if (msg.type === 'setUserLocation') setUserLocation(msg.lat, msg.lng, msg.accuracy);
+        if (msg.type === 'setPartnerLocation') setPartnerLocation(msg.lat, msg.lng);
       } catch(e) {}
     }
 
@@ -208,7 +259,7 @@ const MAP_HTML = `
 </html>
 `;
 
-const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation = null, mapTheme = "dark", onLongPress }, ref) {
+const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation = null, partnerLocation = null, mapTheme = "dark", onLongPress }, ref) {
   const webViewRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
@@ -219,6 +270,7 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
   }));
   const pendingMarkers = useRef(markers);
   const pendingUserLocation = useRef(userLocation);
+  const pendingPartnerLocation = useRef(partnerLocation);
   const pendingTheme = useRef(mapTheme);
   const isLoaded = useRef(false);
 
@@ -239,6 +291,13 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
     );
   };
 
+  const pushPartnerLocation = (loc) => {
+    if (!webViewRef.current || !isLoaded.current || !loc) return;
+    webViewRef.current.injectJavaScript(
+      `setPartnerLocation(${loc.latitude}, ${loc.longitude}); true;`
+    );
+  };
+
   useEffect(() => {
     pendingMarkers.current = markers;
     pushMarkers(markers);
@@ -250,6 +309,11 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
   }, [userLocation]);
 
   useEffect(() => {
+    pendingPartnerLocation.current = partnerLocation;
+    pushPartnerLocation(partnerLocation);
+  }, [partnerLocation]);
+
+  useEffect(() => {
     pendingTheme.current = mapTheme;
     pushTheme(mapTheme);
   }, [mapTheme]);
@@ -259,6 +323,7 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
     pushTheme(pendingTheme.current);
     pushMarkers(pendingMarkers.current);
     pushUserLocation(pendingUserLocation.current);
+    pushPartnerLocation(pendingPartnerLocation.current);
   };
 
   const handleMessage = (event) => {

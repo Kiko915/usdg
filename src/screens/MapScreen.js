@@ -7,16 +7,22 @@ import { supabase } from "../lib/supabase";
 import LeafletMap from "../components/LeafletMap";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
+import { usePartner } from "../hooks/usePartner";
 
 export default function MapScreen() {
   const { showToast } = useToast();
   const { theme, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
+  const { userId, profile } = usePartner();
 
   const [memories, setMemories] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
+  const [partnerLocation, setPartnerLocation] = useState(null);
   const [selectedCoord, setSelectedCoord] = useState(null);
+
+  const locationSubRef = useRef(null);
+  const realtimeChannelRef = useRef(null);
 
   useEffect(() => {
     requestLocation();
@@ -50,8 +56,37 @@ export default function MapScreen() {
     return () => {
       memoriesChannel.unsubscribe();
       imagesChannel.unsubscribe();
+      if (locationSubRef.current) {
+        locationSubRef.current.remove();
+      }
+      if (realtimeChannelRef.current) {
+        realtimeChannelRef.current.unsubscribe();
+      }
     };
   }, []);
+
+  // Set up live broadcast channel once we know both IDs
+  useEffect(() => {
+    if (!userId || !profile?.partner_id) return;
+
+    const coupleId = [userId, profile.partner_id].sort().join(":");
+    
+    const channel = supabase.channel(`live-location:${coupleId}`)
+      .on("broadcast", { event: "location_update" }, (payload) => {
+        // Only process updates from the partner, not our own echoed back
+        if (payload.payload.user_id !== userId) {
+          setPartnerLocation(payload.payload.location);
+        }
+      })
+      .subscribe();
+      
+    realtimeChannelRef.current = channel;
+
+    return () => {
+      channel.unsubscribe();
+      realtimeChannelRef.current = null;
+    };
+  }, [userId, profile?.partner_id]);
 
   const requestLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -63,14 +98,44 @@ export default function MapScreen() {
       });
       return;
     }
+
+    // Initial position
     const loc = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.High,
     });
-    setUserLocation({
+    
+    const initialLocation = {
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
       accuracy: loc.coords.accuracy,
-    });
+    };
+    setUserLocation(initialLocation);
+
+    // Subscribe to live location updates
+    locationSubRef.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 3000, // Update every 3 seconds minimum
+        distanceInterval: 5, // Update if moved by 5 meters
+      },
+      (newLoc) => {
+        const updatedLocation = {
+          latitude: newLoc.coords.latitude,
+          longitude: newLoc.coords.longitude,
+          accuracy: newLoc.coords.accuracy,
+        };
+        setUserLocation(updatedLocation);
+
+        // Broadcast to partner if linked
+        if (realtimeChannelRef.current) {
+          realtimeChannelRef.current.send({
+            type: "broadcast",
+            event: "location_update",
+            payload: { user_id: userId, location: updatedLocation }
+          });
+        }
+      }
+    );
   };
 
   const handleRecenter = () => {
@@ -109,6 +174,7 @@ export default function MapScreen() {
         ref={mapRef}
         markers={memories}
         userLocation={userLocation}
+        partnerLocation={partnerLocation}
         mapTheme={theme}
         onLongPress={handleLongPress}
       />
