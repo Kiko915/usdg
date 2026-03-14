@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../hooks/useProfile";
@@ -86,6 +87,7 @@ export default function SettingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const loadUser = () =>
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -153,6 +155,19 @@ export default function SettingsScreen() {
         },
       ],
     });
+  };
+
+  const handleDateChange = async (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (!selectedDate || event.type === "dismissed") return;
+
+    const isoDate = selectedDate.toISOString();
+    const { error } = await updateProfile({ anniversary_date: isoDate });
+    if (error) {
+      showToast({ type: "error", title: "Failed to save", message: error.message });
+    } else {
+      showToast({ type: "success", title: "Saved", message: "Anniversary updated." });
+    }
   };
 
   const email = user?.email ?? "—";
@@ -326,17 +341,28 @@ export default function SettingsScreen() {
         <SectionLabel label="Partner" colors={colors} />
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {partner ? (
-            <Row
-              icon="heart-dislike-outline"
-              iconBg="#1A0D12"
-              iconColor="#FF3B5C"
-              label="Unlink partner"
-              value={`@${partner.username}`}
-              destructive
-              onPress={requestBusy ? undefined : handleUnlink}
-              colors={colors}
-              last
-            />
+            <>
+              <Row
+                icon="calendar-outline"
+                iconBg="#1A0D12"
+                iconColor="#FF5D8F"
+                label="Anniversary"
+                value={profile?.anniversary_date ? new Date(profile.anniversary_date).toLocaleDateString() : "Set date"}
+                onPress={() => setShowDatePicker(true)}
+                colors={colors}
+              />
+              <Row
+                icon="heart-dislike-outline"
+                iconBg="#1A0D12"
+                iconColor="#FF3B5C"
+                label="Unlink partner"
+                value={`@${partner.username}`}
+                destructive
+                onPress={requestBusy ? undefined : handleUnlink}
+                colors={colors}
+                last
+              />
+            </>
           ) : (
             <Row
               icon="people-outline"
@@ -386,6 +412,16 @@ export default function SettingsScreen() {
           />
         </View>
       </ScrollView>
+      
+      {showDatePicker && (
+        <DateTimePicker
+          value={profile?.anniversary_date ? new Date(profile.anniversary_date) : new Date()}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+        />
+      )}
     </FadeScreen>
   );
 }
