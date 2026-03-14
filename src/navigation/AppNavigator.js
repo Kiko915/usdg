@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useTheme } from "../context/ThemeContext";
 import MapScreen from "../screens/MapScreen";
 import MemoriesScreen from "../screens/MemoriesScreen";
-import MessagingScreen from "../screens/MessagingScreen";
+import UsDashboardScreen from "../screens/UsDashboardScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import TabBar from "../components/TabBar";
 
@@ -32,7 +32,7 @@ export default function AppNavigator() {
       >
         <Tab.Screen name="Map"       component={MapScreen}       />
         <Tab.Screen name="Memories"  component={MemoriesScreen}  />
-        <Tab.Screen name="Messaging" component={MessagingScreen} />
+        <Tab.Screen name="Us"        component={UsDashboardScreen} />
         <Tab.Screen name="Settings"  component={SettingsScreen}  />
       </Tab.Navigator>
     </NavigationContainer>

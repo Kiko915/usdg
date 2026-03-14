@@ -9,7 +9,7 @@ const TABS = [
   { key: "Map",       icon: "map-outline",        activeIcon: "map"        },
   { key: "Memories",  icon: "heart-outline",      activeIcon: "heart"      },
   { key: "Add",       icon: "add",                center: true             },
-  { key: "Messaging", icon: "chatbubble-outline", activeIcon: "chatbubble" },
+  { key: "Us",        icon: "people-outline",     activeIcon: "people"     },
   { key: "Settings",  icon: "settings-outline",   activeIcon: "settings"   },
 ];
 
