@@ -88,5 +88,11 @@ export function usePartner() {
     return `${data.publicUrl}?t=${Date.now()}`;
   };
 
-  return { userId, profile, partner, loading, updateStatus, getAvatarUrl };
+  const refetchProfile = async () => {
+    if (!userId) return;
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (data) setProfile(data);
+  };
+
+  return { userId, profile, partner, loading, updateStatus, getAvatarUrl, refetchProfile };
 }

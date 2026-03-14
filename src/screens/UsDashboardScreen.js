@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Animated, Image, ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -69,7 +69,7 @@ export default function UsDashboardScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { userId, profile, partner, loading, updateStatus } = usePartner();
+  const { userId, profile, partner, loading, updateStatus, refetchProfile } = usePartner();
   const {
     incomingRequest, outgoingRequest,
     requestLoading, requestBusy,
@@ -120,6 +120,12 @@ export default function UsDashboardScreen() {
   }, [userId, profile?.partner_id]);
 
   useEffect(() => { fetchLatestMemory(); }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) refetchProfile();
+    }, [userId])
+  );
 
   const fetchLatestMemory = async () => {
     const { data } = await supabase
