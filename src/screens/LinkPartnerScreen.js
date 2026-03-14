@@ -51,11 +51,6 @@ function UserRow({ item, onSend, busy, sent, colors }) {
         <Text style={[styles.rowUsername, { color: colors.text }]}>
           @{item.username}
         </Text>
-        {item.email && (
-          <Text style={[styles.rowEmail, { color: colors.textSub }]}>
-            {item.email}
-          </Text>
-        )}
         {taken && (
           <Text style={[styles.rowSub, { color: colors.textSub }]}>
             Already linked
@@ -169,8 +164,8 @@ export default function LinkPartnerScreen({ navigation }) {
 
     const { data, error: err } = await supabase
       .from("profiles")
-      .select("id, username, partner_id, email")
-      .or(`username.ilike.%${trimmed}%,email.ilike.%${trimmed}%`)
+      .select("id, username, partner_id")
+      .ilike("username", `%${trimmed}%`)
       .neq("id", userId ?? "00000000-0000-0000-0000-000000000000")
       .order("username")
       .limit(20);
@@ -247,7 +242,7 @@ export default function LinkPartnerScreen({ navigation }) {
               style={[styles.searchInput, { color: colors.text }]}
               value={query}
               onChangeText={(t) => { setQuery(t); setError(null); }}
-              placeholder="Search by username or email…"
+              placeholder="Search by username…"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               autoCorrect={false}
@@ -362,7 +357,6 @@ const styles = StyleSheet.create({
   },
 
   rowUsername: { fontSize: 15, fontFamily: "Catamaran_600SemiBold" },
-  rowEmail:    { fontSize: 13, fontFamily: "Catamaran_400Regular" },
   rowSub:      { fontSize: 12, fontFamily: "Catamaran_400Regular" },
 
   // Pill (sent / taken)
