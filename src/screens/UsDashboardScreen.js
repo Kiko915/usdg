@@ -149,8 +149,8 @@ export default function UsDashboardScreen() {
     ? Math.floor((Date.now() - new Date(profile.anniversary_date).getTime()) / 86400000)
     : null;
 
-  const myAvatarUrl      = getAvatarUrl(profile?.avatar_url);
-  const partnerAvatarUrl = getAvatarUrl(partner?.avatar_url);
+  const myAvatarUrl      = profile?.avatar_url ?? null;
+  const partnerAvatarUrl = partner?.avatar_url ?? null;
   const canNudge         = !!partner && !nudgeCooldown;
 
   if (loading) {
@@ -164,7 +164,7 @@ export default function UsDashboardScreen() {
 
   return (
     <FadeScreen>
-      <ScreenHeader title="Us ♡" />
+      <ScreenHeader title="Us" />
 
       {/* ── Nudge received banner ── */}
       {showNudgeBanner && (
