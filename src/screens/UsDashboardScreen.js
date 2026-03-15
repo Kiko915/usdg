@@ -78,6 +78,7 @@ export default function UsDashboardScreen() {
 
   const [partnerOnline, setPartnerOnline]   = useState(false);
   const [nudgeCooldown, setNudgeCooldown]   = useState(false);
+  const [nudgeAnimating, setNudgeAnimating] = useState(false);
   const [showNudgeBanner, setShowNudgeBanner] = useState(false);
   const [latestMemory, setLatestMemory]     = useState(null);
   const [refreshing, setRefreshing]         = useState(false);
@@ -85,7 +86,9 @@ export default function UsDashboardScreen() {
   const realtimeChannel = useRef(null);
   const bannerY         = useRef(new Animated.Value(-120)).current;
   const bannerOpacity   = useRef(new Animated.Value(0)).current;
-  const nudgeBtnScale   = useRef(new Animated.Value(1)).current;
+  const nudgeBtnScale  = useRef(new Animated.Value(1)).current;
+  const nudgeHeartScale = useRef(new Animated.Value(1)).current;
+  const nudgeHeartRotate = useRef(new Animated.Value(0)).current;
 
   // Heartbeat dots
   const d1 = useRef(new Animated.Value(0.2)).current;
@@ -164,14 +167,38 @@ export default function UsDashboardScreen() {
   };
 
   const handleSendNudge = async () => {
-    if (nudgeCooldown || !realtimeChannel.current || !partner) return;
+    if (nudgeCooldown || !realtimeChannel.current || !partner || nudgeAnimating) return;
+    
+    setNudgeAnimating(true);
+
+    // Button press animation
     Animated.sequence([
-      Animated.timing(nudgeBtnScale, { toValue: 0.94, duration: 90, useNativeDriver: true }),
-      Animated.spring(nudgeBtnScale, { toValue: 1, friction: 4,     useNativeDriver: true }),
+      Animated.timing(nudgeBtnScale, { toValue: 0.95, duration: 80, useNativeDriver: true }),
+      Animated.spring(nudgeBtnScale, { toValue: 1, friction: 4, useNativeDriver: true }),
     ]).start();
+
+    // Heart pulse + rotate animation
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(nudgeHeartScale, { toValue: 1.3, duration: 150, useNativeDriver: true }),
+        Animated.timing(nudgeHeartRotate, { toValue: 1, duration: 150, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(nudgeHeartScale, { toValue: 1, duration: 150, useNativeDriver: true }),
+        Animated.timing(nudgeHeartRotate, { toValue: 0, duration: 150, useNativeDriver: true }),
+      ]),
+    ]).start();
+
+    // Haptic feedback sequence
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await delay(100);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     await realtimeChannel.current.send({ type: "broadcast", event: "nudge", payload: { from: userId } });
     setNudgeCooldown(true);
+    
+    // Reset animation state after cooldown shows
+    setTimeout(() => setNudgeAnimating(false), 400);
     setTimeout(() => setNudgeCooldown(false), 10000);
   };
 
@@ -482,9 +509,16 @@ export default function UsDashboardScreen() {
                 />
               )}
               <View style={styles.nudgeLeft}>
-                <View style={[styles.nudgeIconWrap, { backgroundColor: canNudge ? "#FF5D8F20" : colors.bg }]}>
+                <Animated.View style={[
+                  styles.nudgeIconWrap, 
+                  { backgroundColor: canNudge ? "#FF5D8F20" : colors.bg },
+                  { transform: [
+                      { scale: nudgeHeartScale },
+                      { rotate: nudgeHeartRotate.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "15deg"] }) }
+                    ]}
+                ]}>
                   <Text style={{ fontSize: 24 }}>💕</Text>
-                </View>
+                </Animated.View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.nudgeTitle, { color: canNudge ? colors.text : colors.textMuted }]}>
                     {nudgeCooldown ? "Nudge sent!" : !partner ? "No partner linked" : "Send a Nudge"}
@@ -498,13 +532,14 @@ export default function UsDashboardScreen() {
                   </Text>
                 </View>
               </View>
-              <View style={[styles.nudgeArrow, {
-                backgroundColor: canNudge ? "#FF5D8F" : colors.border,
-              }]}>
+              <Animated.View style={[
+                styles.nudgeArrow, 
+                { backgroundColor: canNudge ? "#FF5D8F" : colors.border },
+              ]}>
                 {nudgeCooldown
                   ? <Ionicons name="checkmark" size={16} color="#fff" />
                   : <Ionicons name="arrow-forward" size={16} color={canNudge ? "#fff" : colors.textMuted} />}
-              </View>
+              </Animated.View>
             </TouchableOpacity>
           </Animated.View>
 
