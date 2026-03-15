@@ -448,7 +448,7 @@ export default function UsDashboardScreen() {
           </View>
 
           {/* ── Anniversary counter ── */}
-          {daysCount !== null ? (
+          {partner && daysCount !== null ? (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, overflow: "hidden" }]}>
               <LinearGradient
                 colors={["#FF5D8F12", "transparent"]}
@@ -475,7 +475,7 @@ export default function UsDashboardScreen() {
                 </View>
               </View>
             </View>
-          ) : (
+          ) : partner ? (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.emptyRow}>
                 <View style={[styles.emptyIconWrap, { backgroundColor: colors.bg }]}>
@@ -487,7 +487,7 @@ export default function UsDashboardScreen() {
                 </View>
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* ── Digital Nudge ── */}
           <Animated.View style={{ transform: [{ scale: nudgeBtnScale }] }}>

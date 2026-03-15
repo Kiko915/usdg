@@ -81,7 +81,7 @@ export default function SettingsScreen() {
   const { showModal } = useModal();
   const { colors, theme, toggleTheme } = useTheme();
   const { profile, loading, saving, updateProfile, pickAndUploadAvatar, getAvatarUrl, refetch } = useProfile();
-  const { userId, partner } = usePartner();
+  const { userId, partner, refetchProfile } = usePartner();
   const { unlinkPartner, requestBusy } = usePartnerRequest(userId);
   const [user, setUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -149,6 +149,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             const result = await unlinkPartner();
             if (!result?.error) {
+              await refetchProfile();
               showToast({ type: "success", title: "Unlinked", message: "You are no longer linked." });
             }
           },
