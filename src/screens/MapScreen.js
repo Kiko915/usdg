@@ -128,7 +128,7 @@ export default function MapScreen() {
 
         // Broadcast to partner if linked
         if (realtimeChannelRef.current) {
-          realtimeChannelRef.current.send({
+          realtimeChannelRef.current.httpSend({
             type: "broadcast",
             event: "location_update",
             payload: { user_id: userId, location: updatedLocation }
