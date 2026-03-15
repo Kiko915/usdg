@@ -196,7 +196,7 @@ export default function UsDashboardScreen() {
     await delay(100);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    await realtimeChannel.current.httpSend({ type: "broadcast", event: "nudge", payload: { from: userId } });
+    await realtimeChannel.current.send({ type: "broadcast", event: "nudge", payload: { from: userId } });
     setNudgeCooldown(true);
     
     // Reset animation state after cooldown shows
