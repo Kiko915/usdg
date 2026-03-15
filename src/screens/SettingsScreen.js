@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "../hooks/useProfile";
 import { usePartner } from "../hooks/usePartner";
@@ -93,6 +94,14 @@ export default function SettingsScreen() {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
 
   useEffect(() => { loadUser(); }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        refetchProfile();
+      }
+    }, [userId])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
