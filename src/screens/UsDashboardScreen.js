@@ -70,7 +70,7 @@ export default function UsDashboardScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { userId, profile, partner, loading, updateStatus, refetchProfile } = usePartner();
+  const { userId, profile, partner, loading, updateStatus, refetchProfile, refetchPartner } = usePartner();
   const {
     incomingRequest, outgoingRequest,
     requestLoading, requestBusy,
@@ -208,6 +208,7 @@ export default function UsDashboardScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     await acceptRequest(incomingRequest.id);
     await refetchProfile();
+    await refetchPartner();
     setShowLinkConfetti(true);
     setTimeout(() => setShowLinkConfetti(false), 4000);
   };

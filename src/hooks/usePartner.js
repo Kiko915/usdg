@@ -91,8 +91,20 @@ export function usePartner() {
   const refetchProfile = async () => {
     if (!userId) return;
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-    if (data) setProfile(data);
+    if (data) {
+      setProfile(data);
+      // If we now have a partner_id, load the partner
+      if (data.partner_id) {
+        await loadPartner(data.partner_id);
+      }
+    }
   };
 
-  return { userId, profile, partner, loading, updateStatus, getAvatarUrl, refetchProfile };
+  const refetchPartner = async () => {
+    if (profile?.partner_id) {
+      await loadPartner(profile.partner_id);
+    }
+  };
+
+  return { userId, profile, partner, loading, updateStatus, getAvatarUrl, refetchProfile, refetchPartner };
 }
