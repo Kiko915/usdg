@@ -15,6 +15,7 @@ import { usePartner } from "../hooks/usePartner";
 import { usePartnerRequest } from "../hooks/usePartnerRequest";
 import FadeScreen from "../components/FadeScreen";
 import ScreenHeader from "../components/ScreenHeader";
+import Confetti from "../components/Confetti";
 
 const MOODS = [
   { emoji: "💻", label: "Coding"    },
@@ -80,6 +81,7 @@ export default function UsDashboardScreen() {
   const [nudgeCooldown, setNudgeCooldown]   = useState(false);
   const [nudgeAnimating, setNudgeAnimating] = useState(false);
   const [showNudgeBanner, setShowNudgeBanner] = useState(false);
+  const [showLinkConfetti, setShowLinkConfetti] = useState(false);
   const [latestMemory, setLatestMemory]     = useState(null);
   const [refreshing, setRefreshing]         = useState(false);
 
@@ -202,6 +204,19 @@ export default function UsDashboardScreen() {
     setTimeout(() => setNudgeCooldown(false), 10000);
   };
 
+  const handleAcceptRequest = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await acceptRequest(incomingRequest.id);
+    await refetchProfile();
+    setShowLinkConfetti(true);
+    setTimeout(() => setShowLinkConfetti(false), 4000);
+  };
+
+  const handleDeclineRequest = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await declineRequest(incomingRequest.id);
+  };
+
   const handleMoodSelect = async (emoji) => {
     await Haptics.selectionAsync();
     await updateStatus(emoji);
@@ -227,6 +242,7 @@ export default function UsDashboardScreen() {
   return (
     <FadeScreen>
       <ScreenHeader title="Us" />
+      {showLinkConfetti && <Confetti />}
 
       {/* ── Nudge received banner ── */}
       {showNudgeBanner && (
@@ -296,7 +312,7 @@ export default function UsDashboardScreen() {
               <View style={styles.requestActions}>
                 <TouchableOpacity
                   style={[styles.requestBtn, styles.declineBtn, { borderColor: colors.border, backgroundColor: colors.bg }]}
-                  onPress={() => declineRequest(incomingRequest.id)}
+                  onPress={handleDeclineRequest}
                   disabled={requestBusy}
                   activeOpacity={0.75}
                 >
@@ -304,7 +320,7 @@ export default function UsDashboardScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.requestBtn, styles.acceptBtn]}
-                  onPress={() => acceptRequest(incomingRequest.id)}
+                  onPress={handleAcceptRequest}
                   disabled={requestBusy}
                   activeOpacity={0.75}
                 >
