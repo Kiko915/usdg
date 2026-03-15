@@ -88,6 +88,31 @@ const MAP_HTML = `
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
       z-index: 1;
     }
+    /* Partner avatar marker */
+    .partner-avatar-outer {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .partner-avatar-ring {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(66, 133, 244, 0.25);
+      animation: ring-pulse 2s ease-out infinite;
+    }
+    .partner-avatar-img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      z-index: 1;
+      object-fit: cover;
+    }
     @keyframes ring-pulse {
       0%   { transform: scale(0.8); opacity: 0.8; }
       100% { transform: scale(2.2); opacity: 0; }
@@ -126,7 +151,7 @@ const MAP_HTML = `
       popupAnchor: [0, -14]
     });
 
-    // Partner location dot — blue pulsing
+    // Partner location dot — blue pulsing (or avatar)
     var partnerIcon = L.divIcon({
       html: '<div class="partner-dot-outer"><div class="partner-dot-ring"></div><div class="partner-dot-core"></div></div>',
       className: '',
@@ -134,6 +159,18 @@ const MAP_HTML = `
       iconAnchor: [11, 11],
       popupAnchor: [0, -14]
     });
+
+    // Avatar-based partner marker
+    function createPartnerAvatarIcon(avatarUrl) {
+      var escapedUrl = avatarUrl.replace(/'/g, "\\'").replace(/"/g, '\\"');
+      return L.divIcon({
+        html: '<div class="partner-avatar-outer"><div class="partner-avatar-ring"></div><img class="partner-avatar-img" src="' + escapedUrl + '" /></div>',
+        className: '',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+        popupAnchor: [0, -20]
+      });
+    }
 
     // ── Long press detection ──
     map.on('mousedown touchstart', function(e) {
@@ -195,14 +232,22 @@ const MAP_HTML = `
       }
     }
 
+    var currentPartnerAvatarUrl = null;
+    var currentPartnerName = "Partner";
+
     // ── Set partner location ──
-    function setPartnerLocation(lat, lng) {
+    function setPartnerLocation(lat, lng, avatarUrl, name) {
+      currentPartnerAvatarUrl = avatarUrl || null;
+      currentPartnerName = name || "Partner";
+      var icon = avatarUrl ? createPartnerAvatarIcon(avatarUrl) : partnerIcon;
+      var popupContent = '<b>' + currentPartnerName + '</b>';
       if (partnerMarker) {
-        // Move smoothly
         partnerMarker.setLatLng([lat, lng]);
+        partnerMarker.setIcon(icon);
+        partnerMarker.setPopupContent(popupContent);
       } else {
-        partnerMarker = L.marker([lat, lng], { icon: partnerIcon, zIndexOffset: 999 })
-          .bindPopup('<b>Partner</b>')
+        partnerMarker = L.marker([lat, lng], { icon: icon, zIndexOffset: 999 })
+          .bindPopup(popupContent)
           .addTo(map);
       }
     }
@@ -248,7 +293,7 @@ const MAP_HTML = `
         var msg = JSON.parse(event.data);
         if (msg.type === 'setMarkers') setMarkers(msg.markers);
         if (msg.type === 'setUserLocation') setUserLocation(msg.lat, msg.lng, msg.accuracy);
-        if (msg.type === 'setPartnerLocation') setPartnerLocation(msg.lat, msg.lng);
+        if (msg.type === 'setPartnerLocation') setPartnerLocation(msg.lat, msg.lng, msg.avatarUrl, msg.partnerName);
       } catch(e) {}
     }
 
@@ -259,7 +304,7 @@ const MAP_HTML = `
 </html>
 `;
 
-const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation = null, partnerLocation = null, mapTheme = "dark", onLongPress }, ref) {
+const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation = null, partnerLocation = null, partnerAvatarUrl = null, partnerName = "Partner", mapTheme = "dark", onLongPress }, ref) {
   const webViewRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
@@ -271,6 +316,8 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
   const pendingMarkers = useRef(markers);
   const pendingUserLocation = useRef(userLocation);
   const pendingPartnerLocation = useRef(partnerLocation);
+  const pendingPartnerAvatarUrl = useRef(partnerAvatarUrl);
+  const pendingPartnerName = useRef(partnerName);
   const pendingTheme = useRef(mapTheme);
   const isLoaded = useRef(false);
 
@@ -291,10 +338,10 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
     );
   };
 
-  const pushPartnerLocation = (loc) => {
+  const pushPartnerLocation = (loc, avatarUrl, name) => {
     if (!webViewRef.current || !isLoaded.current || !loc) return;
     webViewRef.current.injectJavaScript(
-      `setPartnerLocation(${loc.latitude}, ${loc.longitude}); true;`
+      `setPartnerLocation(${loc.latitude}, ${loc.longitude}, ${JSON.stringify(avatarUrl)}, ${JSON.stringify(name)}); true;`
     );
   };
 
@@ -310,8 +357,10 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
 
   useEffect(() => {
     pendingPartnerLocation.current = partnerLocation;
-    pushPartnerLocation(partnerLocation);
-  }, [partnerLocation]);
+    pendingPartnerAvatarUrl.current = partnerAvatarUrl;
+    pendingPartnerName.current = partnerName;
+    pushPartnerLocation(partnerLocation, partnerAvatarUrl, partnerName);
+  }, [partnerLocation, partnerAvatarUrl, partnerName]);
 
   useEffect(() => {
     pendingTheme.current = mapTheme;
@@ -323,7 +372,7 @@ const LeafletMap = forwardRef(function LeafletMap({ markers = [], userLocation =
     pushTheme(pendingTheme.current);
     pushMarkers(pendingMarkers.current);
     pushUserLocation(pendingUserLocation.current);
-    pushPartnerLocation(pendingPartnerLocation.current);
+    pushPartnerLocation(pendingPartnerLocation.current, pendingPartnerAvatarUrl.current, pendingPartnerName.current);
   };
 
   const handleMessage = (event) => {

@@ -83,6 +83,9 @@ export default function SettingsScreen() {
   const { colors, theme, toggleTheme } = useTheme();
   const { profile, loading, saving, updateProfile, pickAndUploadAvatar, getAvatarUrl, refetch } = useProfile();
   const { userId, partner, refetchProfile } = usePartner();
+
+  const anniversaryDate = profile?.anniversary_date || partner?.anniversary_date;
+  const pickerDate = anniversaryDate ? new Date(anniversaryDate) : new Date();
   const { unlinkPartner, requestBusy } = usePartnerRequest(userId);
   const [user, setUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -173,11 +176,17 @@ export default function SettingsScreen() {
 
     const isoDate = selectedDate.toISOString();
     const { error } = await updateProfile({ anniversary_date: isoDate });
+    
     if (error) {
       showToast({ type: "error", title: "Failed to save", message: error.message });
-    } else {
-      showToast({ type: "success", title: "Saved", message: "Anniversary updated." });
+      return;
     }
+
+    if (profile?.partner_id) {
+      await supabase.from("profiles").update({ anniversary_date: isoDate }).eq("id", profile.partner_id);
+    }
+
+    showToast({ type: "success", title: "Saved", message: "Anniversary updated for both of you." });
   };
 
   const email = user?.email ?? "—";
@@ -357,7 +366,7 @@ export default function SettingsScreen() {
                 iconBg="#1A0D12"
                 iconColor="#FF5D8F"
                 label="Anniversary"
-                value={profile?.anniversary_date ? new Date(profile.anniversary_date).toLocaleDateString() : "Set date"}
+                value={anniversaryDate ? new Date(anniversaryDate).toLocaleDateString() : "Set date"}
                 onPress={() => setShowDatePicker(true)}
                 colors={colors}
               />
@@ -425,7 +434,7 @@ export default function SettingsScreen() {
       
       {showDatePicker && (
         <DateTimePicker
-          value={profile?.anniversary_date ? new Date(profile.anniversary_date) : new Date()}
+          value={pickerDate}
           mode="date"
           display="default"
           onChange={handleDateChange}

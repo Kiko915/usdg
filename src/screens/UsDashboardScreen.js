@@ -209,6 +209,18 @@ export default function UsDashboardScreen() {
     await acceptRequest(incomingRequest.id);
     await refetchProfile();
     await refetchPartner();
+    
+    // Sync anniversary dates on link
+    const myDate = profile?.anniversary_date;
+    const partnerDate = partner?.anniversary_date;
+    if (myDate || partnerDate) {
+      const earlierDate = [myDate, partnerDate].filter(Boolean).sort((a, b) => new Date(a) - new Date(b))[0];
+      await supabase.from("profiles").update({ anniversary_date: earlierDate }).eq("id", userId);
+      if (partner?.id) {
+        await supabase.from("profiles").update({ anniversary_date: earlierDate }).eq("id", partner.id);
+      }
+    }
+    
     setShowLinkConfetti(true);
     setTimeout(() => setShowLinkConfetti(false), 4000);
   };
@@ -223,8 +235,19 @@ export default function UsDashboardScreen() {
     await updateStatus(emoji);
   };
 
-  const daysCount = profile?.anniversary_date
-    ? Math.floor((Date.now() - new Date(profile.anniversary_date).getTime()) / 86400000)
+  const anniversaryDate = profile?.anniversary_date || partner?.anniversary_date;
+  const daysCount = anniversaryDate
+    ? Math.floor((Date.now() - new Date(anniversaryDate).getTime()) / 86400000)
+    : null;
+
+  const partnerAnniversaryDate = partner?.anniversary_date;
+  const combinedAnniversaryDate = (() => {
+    const dates = [profile?.anniversary_date, partner?.anniversary_date].filter(Boolean);
+    if (dates.length === 0) return null;
+    return dates.sort((a, b) => new Date(a) - new Date(b))[0];
+  })();
+  const combinedDaysCount = combinedAnniversaryDate
+    ? Math.floor((Date.now() - new Date(combinedAnniversaryDate).getTime()) / 86400000)
     : null;
 
   const myAvatarUrl      = profile?.avatar_url ?? null;
@@ -477,12 +500,12 @@ export default function UsDashboardScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={styles.daysRow}>
                     <Text style={[styles.daysNumber, { color: colors.text }]}>
-                      {daysCount.toLocaleString()}
+                      {combinedDaysCount.toLocaleString()}
                     </Text>
                     <Text style={[styles.daysWord, { color: colors.textSub }]}>days</Text>
                   </View>
                   <Text style={[styles.anniversaryDate, { color: colors.textMuted }]}>
-                    Since {new Date(profile.anniversary_date).toLocaleDateString("en-US", {
+                    Since {new Date(combinedAnniversaryDate).toLocaleDateString("en-US", {
                       month: "long", day: "numeric", year: "numeric",
                     })}
                   </Text>

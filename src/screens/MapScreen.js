@@ -14,7 +14,10 @@ export default function MapScreen() {
   const { theme, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const mapRef = useRef(null);
-  const { userId, profile } = usePartner();
+  const { userId, profile, partner, getAvatarUrl } = usePartner();
+
+  const partnerAvatarUrl = partner ? getAvatarUrl(partner.avatar_url) : null;
+  const partnerName = partner?.username || "Partner";
 
   const [memories, setMemories] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
@@ -175,6 +178,8 @@ export default function MapScreen() {
         markers={memories}
         userLocation={userLocation}
         partnerLocation={partnerLocation}
+        partnerAvatarUrl={partnerAvatarUrl}
+        partnerName={partnerName}
         mapTheme={theme}
         onLongPress={handleLongPress}
       />
