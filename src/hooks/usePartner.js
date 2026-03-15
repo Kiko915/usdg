@@ -96,6 +96,9 @@ export function usePartner() {
       // If we now have a partner_id, load the partner
       if (data.partner_id) {
         await loadPartner(data.partner_id);
+      } else {
+        // Partner was unlinked, clear partner state
+        await loadPartner(null);
       }
     }
   };
