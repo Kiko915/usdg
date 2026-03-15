@@ -94,6 +94,11 @@ function UserRow({ item, onSend, busy, sent, colors }) {
   );
 }
 
+// Helper to check if a username has a pending outgoing request
+function hasPendingRequest(username, outgoingRequest) {
+  return outgoingRequest?.receiverUsername === username;
+}
+
 // ─── Empty / initial state ────────────────────────────────────────────────────
 function EmptyState({ query, searching, colors }) {
   if (searching) return null;
@@ -132,7 +137,7 @@ export default function LinkPartnerScreen({ navigation }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { userId } = usePartner();
-  const { sendRequest, requestBusy } = usePartnerRequest(userId);
+  const { sendRequest, requestBusy, outgoingRequest } = usePartnerRequest(userId);
 
   const [query, setQuery]             = useState("");
   const [results, setResults]         = useState([]);
@@ -289,7 +294,7 @@ export default function LinkPartnerScreen({ navigation }) {
                 item={item}
                 onSend={handleSend}
                 busy={requestBusy}
-                sent={sentUsernames.has(item.username)}
+                sent={sentUsernames.has(item.username) || hasPendingRequest(item.username, outgoingRequest)}
                 colors={colors}
               />
             )}
